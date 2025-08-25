@@ -5,7 +5,7 @@ set -e
 LIVEKIT_URL="ws://localhost:7880"
 LIVEKIT_KEY="TEST_API_KEY"
 LIVEKIT_SECRET="nHOGGjApuwaGLSRjuRVNewPLhTRkOyoz"
-NUM_PARTICIPANTS=10
+NUM_ROOMS=10
 ROOM_PREFIX="test-room"
 PARTICIPANT_PREFIX="participant"
 LATENCY=4
@@ -13,8 +13,8 @@ LATENCY=4
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -n|--num-participants)
-            NUM_PARTICIPANTS="$2"
+        -n|--num-rooms)
+            NUM_ROOMS="$2"
             shift 2
             ;;
         -l|--latency)
@@ -24,15 +24,15 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo "Options:"
-            echo "  -n, --num-participants NUM   Number of participants (default: 10)"
-            echo "  -l, --latency LATENCY        Network latency in ms (default: 4)"
+            echo "  -n, --num-rooms NUM          Number of rooms (default: 10)"
+            echo "  -l, --latency LATENCY        Network latency (Redis) in ms (default: 4)"
             echo "  -h, --help                   Show this help"
             exit 0
             ;;
         *)
-            # If it's just a number without flag, treat it as NUM_PARTICIPANTS
+            # If it's just a number without flag, treat it as NUM_ROOMS
             if [[ $1 =~ ^[0-9]+$ ]]; then
-                NUM_PARTICIPANTS="$1"
+                NUM_ROOMS="$1"
                 shift
             else
                 echo "Unknown option: $1"
@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 
-echo "Creating $NUM_PARTICIPANTS participants in separate rooms..."
+echo "Creating $NUM_ROOMS participants in separate rooms..."
 
 # Function to create a participant in a room
 create_participant() {
@@ -97,21 +97,37 @@ echo "Toxiproxy latency updated to ${LATENCY}ms"
 
 
 # Create participants in parallel
-for i in $(seq 1 $NUM_PARTICIPANTS); do
+for i in $(seq 1 $NUM_ROOMS); do
     create_participant $i
     
     # Every 10 participants, wait a bit longer
     if [ $((i % 10)) -eq 0 ]; then
-        echo "Created $i participants, pausing briefly..."
+        echo "Created $i rooms, pausing briefly..."
         # sleep 2
     fi
 done
 
-echo "All $NUM_PARTICIPANTS participants created!"
-echo "Participants will remain connected in the background."
-echo "To disconnect all participants, run: pkill -f 'lk room join'"
+# wait a bit
+echo "Waiting $((NUM_ROOMS * 2)) seconds for participants to connect..."
+sleep $((NUM_ROOMS * 2))
+
+# Get the list of rooms as JSON and count the number of rooms
+room_count=$(lk room list \
+    --url "$LIVEKIT_URL" \
+    --api-key "$LIVEKIT_KEY" \
+    --api-secret "$LIVEKIT_SECRET" \
+    --json | jq '.rooms | length')
+
+echo "Found $room_count rooms (expected $NUM_ROOMS)"
+if [ "$room_count" -ne "$NUM_ROOMS" ]; then
+    echo "ERROR: Number of rooms ($room_count) does not match expected ($NUM_ROOMS)"
+fi
+
+echo "Rooms will remain connected in the background."
+echo "To disconnect all rooms, run: pkill -f 'lk room join'"
 
 # Optional: Wait for user input before disconnecting
-read -p "Press Enter to disconnect all participants..."
-pkill -f 'lk room join' || echo "No participants to disconnect"
-echo "All participants disconnected."
+read -p "Press Enter to disconnect all rooms..."
+pkill -f 'lk room join' || echo "No rooms to disconnect"
+echo "All rooms disconnected."
+

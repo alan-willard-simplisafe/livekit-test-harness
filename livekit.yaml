@@ -10,7 +10,7 @@ logging:
     level: info
 
 room:
-    create_room_timeout: 60s
+  create_room_timeout: 10s
 
 # Signal Relay
 # since v1.4.0, a more reliable, psrpc based signal relay is available
@@ -33,7 +33,7 @@ psrpc:
   # maximum number of rpc attempts
   max_attempts: 3
   # initial time to wait for calls to complete
-  timeout: 500s
+  timeout: 500ms
   # amount of time added to the timeout after each failure
   backoff: 500ms
   # number of messages to buffer before dropping
