@@ -1,0 +1,60 @@
+services:
+  livekit:
+    image: livekit/livekit-server:v1.9
+    container_name: livekit
+    volumes:
+    - ./livekit.yaml:/livekit.yaml
+    environment:
+    - REDIS_HOST=toxiproxy:26379 # Connect through proxy instead of directly to redis
+    ports:
+    - "7880:7880"
+    - "7881:7881"
+    - "7882:7882/udp"
+    command: "-config /livekit.yaml --node-ip=127.0.0.1"
+    restart: no
+    depends_on:
+      - redis
+      - toxiproxy
+      - toxiproxy-init
+
+  livekit2:
+    image: livekit/livekit-server:v1.9
+    container_name: livekit2
+    volumes:
+    - ./livekit.yaml:/livekit.yaml
+    environment:
+    - REDIS_HOST=toxiproxy:26379  # Connect through proxy instead of directly to redis
+    command: "-config /livekit.yaml --node-ip=127.0.0.1"
+    restart: no
+    depends_on:
+      - redis
+      - toxiproxy
+      - toxiproxy-init
+
+  redis:
+    image: redis:7.4
+    container_name: redis
+    ports:
+    - "6379:6379"
+
+  toxiproxy-init:
+    image: curlimages/curl:latest
+    container_name: toxiproxy-init
+    volumes:
+      - ./init-toxiproxy.sh:/init-toxiproxy.sh
+    command: sh /init-toxiproxy.sh
+    depends_on:
+      - toxiproxy
+      - redis
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.12.0
+    container_name: toxiproxy
+    ports:
+      - "8474:8474"  # Toxiproxy API
+      - "26379:26379"  # Proxied Redis port
+    # volumes:
+    #  - ./toxiproxy.json:/toxiproxy.json
+    # command: ["-config", "/toxiproxy.json"]      
+    depends_on:
+      - redis

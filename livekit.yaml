@@ -1,0 +1,40 @@
+port: 7880
+rtc:
+    udp_port: 7882
+    tcp_port: 7881
+    use_external_ip: false
+keys:
+    TEST_API_KEY: nHOGGjApuwaGLSRjuRVNewPLhTRkOyoz
+logging:
+    json: false
+    level: info
+
+room:
+    create_room_timeout: 60s
+
+# Signal Relay
+# since v1.4.0, a more reliable, psrpc based signal relay is available
+# this gives us the ability to reliably proxy messages between a signal server and RTC node
+signal_relay:
+  # amount of time a message delivery is tried before giving up
+  retry_timeout: 30s
+  # minimum amount of time to wait for RTC node to ack,
+  # retries use exponentially increasing wait on every subsequent try
+  # with an upper bound of max_retry_interval
+  min_retry_interval: 500ms
+  # maximum amount of time to wait for RTC node to ack
+  max_retry_interval: 5s
+  # number of messages to buffer before dropping
+  stream_buffer_size: 1000
+
+# PSRPC
+# since v1.5.1, a more reliable, psrpc based internal rpc
+psrpc:
+  # maximum number of rpc attempts
+  max_attempts: 3
+  # initial time to wait for calls to complete
+  timeout: 500s
+  # amount of time added to the timeout after each failure
+  backoff: 500ms
+  # number of messages to buffer before dropping
+  buffer_size: 1000
